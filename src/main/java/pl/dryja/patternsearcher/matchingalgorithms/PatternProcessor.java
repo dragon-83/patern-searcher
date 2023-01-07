@@ -1,12 +1,16 @@
-package pl.dryja.patternsearcher.matchingalgorithm;
+package pl.dryja.patternsearcher.matchingalgorithms;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import pl.dryja.patternsearcher.processingdelegates.FinishActionDelegate;
+import pl.dryja.patternsearcher.processingdelegates.FinishDelegator;
 
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PatternProcessor implements ProcessingProgress {
+@Slf4j
+public class PatternProcessor implements ProcessingProgress, FinishActionDelegate {
 
     private final AtomicInteger inputPointerPosition = new AtomicInteger();
 
@@ -18,6 +22,8 @@ public class PatternProcessor implements ProcessingProgress {
 
     private final String[] pattern;
     private final String[] input;
+
+    private FinishDelegator delegate;
 
     @Getter
     private ProcessorResult processingResult;
@@ -37,20 +43,42 @@ public class PatternProcessor implements ProcessingProgress {
         validate();
     }
 
+    public void processInput() {
+
+        for (int inputPointer = 0; inputPointer < this.inputLength; inputPointer++) {
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            inputPointerPosition.set(inputPointer);
+            if (processPatternOnInput(inputPointer)) break;
+        }
+        inputPointerPosition.set(inputLength);
+
+        delegate.processFinish(this.taskId);
+        delegate = null;
+    }
+
+    @Override
+    public int progressInPercentage() {
+
+        return (int)(((inputPointerPosition.get() / (float)inputLength)) * 100);
+    }
+
+    @Override
+    public void addFinishDelegator(FinishDelegator finishDelegator) {
+
+        this.delegate = finishDelegator;
+    }
+
     private void validate() {
 
         if (this.inputLength < this.patternLength) {
             throw new IllegalArgumentException("Input length can't be shorter than pattern length");
         }
-    }
-
-    public void processInput() {
-
-        for (int inputPointer = 0; inputPointer < this.inputLength; inputPointer++) {
-            if (processPatternOnInput(inputPointer)) break;
-        }
-
-        //TODO add delegate invocation
     }
 
     private boolean processPatternOnInput(int inputPointer) {
@@ -84,11 +112,5 @@ public class PatternProcessor implements ProcessingProgress {
     private boolean isPatternFound(final int typos) {
 
         return this.patternLength != typos;
-    }
-
-    @Override
-    public int progressInPercentage() {
-
-        return (inputPointerPosition.get() / inputLength) * 100;
     }
 }

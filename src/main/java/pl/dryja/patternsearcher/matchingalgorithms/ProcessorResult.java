@@ -1,4 +1,4 @@
-package pl.dryja.patternsearcher.matchingalgorithm;
+package pl.dryja.patternsearcher.matchingalgorithms;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,7 @@ public class ProcessorResult implements Comparable<ProcessorResult> {
 
     private int position;
     private int typos;
-    private boolean patternFound;
+    private boolean partialOrFullPatternFound;
 
     @Override
     public int compareTo(ProcessorResult o) {

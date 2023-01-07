@@ -1,4 +1,4 @@
-package pl.dryja.patternsearcher.configuration;
+package pl.dryja.patternsearcher.configurations;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;

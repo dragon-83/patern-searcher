@@ -1,4 +1,4 @@
-package pl.dryja.patternsearcher.matchingalgorithm;
+package pl.dryja.patternsearcher.matchingalgorithms;
 
 public interface ProcessingProgress {
 
