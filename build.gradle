@@ -1,7 +1,8 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.0.1'
-	id 'io.spring.dependency-management' version '1.1.0'
+    id 'java'
+    id 'org.springframework.boot' version '3.0.1'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id "com.avast.gradle.docker-compose" version "0.16.11"
 }
 
 group = 'pl.dryja'
@@ -9,25 +10,48 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.mockito:mockito-core:4.11.0'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    testImplementation 'junit:junit:4.13.1'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-core:4.11.0'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+}
+
+tasks.register("bootRunLocal") {
+    group = "application"
+    dependsOn(composeUp)
+    doFirst {
+        tasks.bootRun.configure {
+            systemProperty("spring.profiles.active", "local")
+        }
+        tasks.bootRun.finalizedBy(composeDown)
+    }
+    finalizedBy("bootRun")
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+tasks.test.configure {
+    systemProperty("spring.profiles.active", "test")
+}
+
+dockerCompose {
+    useComposeFiles = ['ci/docker-compose.yaml']
 }

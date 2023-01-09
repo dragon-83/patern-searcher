@@ -7,7 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.dryja.patternsearcher.processingdelegates.FinishDelegator;
+import pl.dryja.patternsearcher.processingdelegates.UpdateDelegator;
 
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PatternProcessorTest {
 
     @Mock
-    private FinishDelegator delegate;
+    private UpdateDelegator delegate;
 
     @ParameterizedTest
     @MethodSource("provideInputAndResultForExpectedBehaviorTest")
@@ -28,14 +28,13 @@ class PatternProcessorTest {
                                                               final boolean foundPattern) {
 
         var processor = new PatternProcessor(UUID.randomUUID(), pattern, input);
-        processor.addFinishDelegator(delegate);
+        processor.addUpdateDelegator(delegate);
         processor.processInput();
-        var result = processor.getProcessingResult();
+        var result = processor.getBestProcessingResult();
 
         assertThat(result.getTypos()).isEqualTo(typos);
         assertThat(result.getPosition()).isEqualTo(position);
         assertThat(result.isPartialOrFullPatternFound()).isEqualTo(foundPattern);
-        assertThat(processor.progressInPercentage()).isEqualTo(100);
     }
 
     private static Stream<Arguments> provideInputAndResultForExpectedBehaviorTest() {

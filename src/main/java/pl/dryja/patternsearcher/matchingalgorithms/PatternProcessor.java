@@ -2,17 +2,16 @@ package pl.dryja.patternsearcher.matchingalgorithms;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import pl.dryja.patternsearcher.processingdelegates.FinishActionDelegate;
-import pl.dryja.patternsearcher.processingdelegates.FinishDelegator;
+import pl.dryja.patternsearcher.processingdelegates.UpdateActionDelegate;
+import pl.dryja.patternsearcher.processingdelegates.UpdateDelegator;
 
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-public class PatternProcessor implements ProcessingProgress, FinishActionDelegate {
+public class PatternProcessor implements UpdateActionDelegate {
 
-    private final AtomicInteger inputPointerPosition = new AtomicInteger();
+    private Integer inputPointerPosition;
 
     @Getter
     private final UUID taskId;
@@ -23,10 +22,10 @@ public class PatternProcessor implements ProcessingProgress, FinishActionDelegat
     private final String[] pattern;
     private final String[] input;
 
-    private FinishDelegator delegate;
+    private UpdateDelegator delegate;
 
     @Getter
-    private ProcessorResult processingResult;
+    private ProcessorResult bestProcessingResult;
 
     public PatternProcessor(final UUID taskId, final String pattern, final String input) {
 
@@ -38,7 +37,7 @@ public class PatternProcessor implements ProcessingProgress, FinishActionDelegat
         this.pattern = pattern.split("");
         this.input = input.split("");
 
-        this.inputPointerPosition.set(0);
+        this.inputPointerPosition = 0;
 
         validate();
     }
@@ -53,25 +52,24 @@ public class PatternProcessor implements ProcessingProgress, FinishActionDelegat
                 throw new RuntimeException(e);
             }
 
-            inputPointerPosition.set(inputPointer);
+            inputPointerPosition = inputPointer;
             if (processPatternOnInput(inputPointer)) break;
         }
-        inputPointerPosition.set(inputLength);
+        inputPointerPosition = inputLength;
 
-        delegate.processFinish(this.taskId);
+        delegate.processProgressed(new ProcessorResult(this.bestProcessingResult));
         delegate = null;
     }
 
-    @Override
-    public int progressInPercentage() {
+    private int progressInPercentage() {
 
-        return (int)(((inputPointerPosition.get() / (float)inputLength)) * 100);
+        return (int)(((inputPointerPosition / (float)inputLength)) * 100);
     }
 
     @Override
-    public void addFinishDelegator(FinishDelegator finishDelegator) {
+    public void addUpdateDelegator(UpdateDelegator updateDelegator) {
 
-        this.delegate = finishDelegator;
+        this.delegate = updateDelegator;
     }
 
     private void validate() {
@@ -101,11 +99,13 @@ public class PatternProcessor implements ProcessingProgress, FinishActionDelegat
     private void assignResultIfApplicable(int inputPointer, int typos) {
 
         final var foundPattern = isPatternFound(typos);
-        final var result = new ProcessorResult(inputPointer, typos, foundPattern);
-        if (Objects.isNull(this.processingResult)) {
-            this.processingResult = result;
-        } else if (this.processingResult.compareTo(result) < 0) {
-            this.processingResult = result;
+        final var progressPercentage = progressInPercentage();
+        final var result = new ProcessorResult(taskId, inputPointer, typos, progressPercentage, foundPattern);
+        delegate.processProgressed(result);
+        if (Objects.isNull(this.bestProcessingResult)) {
+            this.bestProcessingResult = result;
+        } else if (this.bestProcessingResult.compareTo(result) < 0) {
+            this.bestProcessingResult = result;
         }
     }
 

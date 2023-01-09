@@ -3,55 +3,41 @@ package pl.dryja.patternsearcher.taskmanagers;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import pl.dryja.patternsearcher.exceptions.PatternMatchingTaskNotFoundException;
 import pl.dryja.patternsearcher.matchingalgorithms.PatternProcessor;
-import pl.dryja.patternsearcher.matchingalgorithms.ProcessingProgress;
-import pl.dryja.patternsearcher.processingdelegates.FinishDelegator;
+import pl.dryja.patternsearcher.matchingalgorithms.ProcessorResult;
+import pl.dryja.patternsearcher.persistance.PatternMatchingRepository;
+import pl.dryja.patternsearcher.processingdelegates.UpdateDelegator;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 @Component
 @AllArgsConstructor
 @Slf4j
-public class TaskManager implements FinishDelegator {
+public class TaskManager implements UpdateDelegator {
 
     private final Executor executor;
-    private final ConcurrentHashMap<UUID, PatternProcessor> processingMap = new ConcurrentHashMap<>();
+    private final PatternMatchingRepository repository;
 
     public void runTask(final PatternProcessor processor) {
 
         log.info("Starting matching process for task id: {}", processor.getTaskId());
-        processor.addFinishDelegator(this);
-        processingMap.put(processor.getTaskId(), processor);
+        processor.addUpdateDelegator(this);
         executor.execute(
-            () -> processor.processInput()
+                () -> processor.processInput()
         );
     }
 
-    public ProcessingProgress getPercentageProgress(final UUID taskId) {
-
-        log.info("Search task in running processes: {}", taskId);
-        if (processingMap.containsKey(taskId)) {
-            return processingMap.get(taskId);
-        }
-
-        log.info("Search task in persisted processes: {}", taskId);
-        //TODO implement check and return task from repo
-        return null;
-    }
-
     @Override
-    public void processFinish(final UUID taskId) {
+    public void processProgressed(final ProcessorResult result) {
 
-        log.info("Finished task process: {}", taskId);
-        final var patternProcessor = processingMap.get(taskId);
-        //TODO implement save result in repo
-
-        final var processingResult = patternProcessor.getProcessingResult();
-        log.info("Success for task with id {}, typos: {}, position {} !!!", taskId, processingResult.getTypos(),
-                processingResult.getPosition());
-
-        processingMap.remove(taskId);
+        log.info("Update on task process: {}", result);
+        final var taskOpt = repository.findById(result.getTaskId());
+        final var task = taskOpt.orElseThrow(() -> new PatternMatchingTaskNotFoundException(result.getTaskId()));
+        task.setPosition(result.getPosition());
+        task.setTypos(result.getTypos());
+        task.setProgress(result.getProgress());
+        task.setFoundAnyPattern(result.isPartialOrFullPatternFound());
+        repository.save(task);
     }
 }

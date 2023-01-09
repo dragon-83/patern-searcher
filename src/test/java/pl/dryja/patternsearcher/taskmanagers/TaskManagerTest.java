@@ -5,14 +5,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.dryja.patternsearcher.exceptions.PatternMatchingTaskNotFoundException;
 import pl.dryja.patternsearcher.matchingalgorithms.PatternProcessor;
 import pl.dryja.patternsearcher.matchingalgorithms.ProcessorResult;
+import pl.dryja.patternsearcher.persistance.PatternMatchingRepository;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class TaskManagerTest {
@@ -22,6 +25,9 @@ class TaskManagerTest {
 
     @Mock
     private PatternProcessor processor;
+
+    @Mock
+    private PatternMatchingRepository repository;
 
     @InjectMocks
     private TaskManager taskManager;
@@ -37,36 +43,11 @@ class TaskManagerTest {
     }
 
     @Test
-    void whenGetProcessingProgressGivenDataFromMapThenReturnIntValue() {
+    void whenSaveResultWhereTaskNotFoundInDbThenThrowException() {
 
-        final var taskId = UUID.randomUUID();
-        when(processor.getTaskId()).thenReturn(taskId);
-        taskManager.runTask(processor);
+        when(repository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
-        final var result = taskManager.getPercentageProgress(taskId);
-
-        assertThat(result).isNotNull();
-    }
-
-    @Test
-    void whenGetProcessingProgressGivenNoDataFromMapThenReturnNull() {
-
-        var result = taskManager.getPercentageProgress(UUID.randomUUID());
-
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void whenProcessFinishedThenProcessResultRemovedFromMap() {
-        final var taskId = UUID.randomUUID();
-        when(processor.getTaskId()).thenReturn(taskId);
-        when(processor.getProcessingResult())
-                .thenReturn(new ProcessorResult(0, 5, true));
-
-        taskManager.runTask(processor);
-        taskManager.processFinish(taskId);
-        var result = taskManager.getPercentageProgress(taskId);
-
-        assertThat(result).isNull();
+        assertThatThrownBy(() -> taskManager.processProgressed(new ProcessorResult(UUID.randomUUID())))
+                .isInstanceOf(PatternMatchingTaskNotFoundException.class);
     }
 }
