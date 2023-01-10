@@ -32,9 +32,9 @@ class PatternProcessorTest {
         processor.processInput();
         var result = processor.getBestProcessingResult();
 
-        assertThat(result.getTypos()).isEqualTo(typos);
-        assertThat(result.getPosition()).isEqualTo(position);
-        assertThat(result.isPartialOrFullPatternFound()).isEqualTo(foundPattern);
+        assertThat(result.typos()).isEqualTo(typos);
+        assertThat(result.position()).isEqualTo(position);
+        assertThat(result.partialOrFullPatternFound()).isEqualTo(foundPattern);
     }
 
     private static Stream<Arguments> provideInputAndResultForExpectedBehaviorTest() {
