@@ -32,12 +32,12 @@ public class TaskManager implements UpdateDelegator {
     public void processProgressed(final ProcessorResult result) {
 
         log.info("Update on task process: {}", result);
-        final var taskOpt = repository.findById(result.getTaskId());
-        final var task = taskOpt.orElseThrow(() -> new PatternMatchingTaskNotFoundException(result.getTaskId()));
-        task.setPosition(result.getPosition());
-        task.setTypos(result.getTypos());
-        task.setProgress(result.getProgress());
-        task.setFoundAnyPattern(result.isPartialOrFullPatternFound());
+        final var taskOpt = repository.findById(result.taskId());
+        final var task = taskOpt.orElseThrow(() -> new PatternMatchingTaskNotFoundException(result.taskId()));
+        task.setPosition(result.position());
+        task.setTypos(result.typos());
+        task.setProgress(result.progress());
+        task.setFoundAnyPattern(result.partialOrFullPatternFound());
         repository.save(task);
     }
 }

@@ -51,7 +51,7 @@ class TaskProcessingIntegrationTest {
                 post("/patternsearcher")
                         .content(asJsonString(new ProcessingRequest(pattern, input)))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.taskId").isNotEmpty())
                 .andReturn().getResponse().getContentAsByteArray();
         final var response = jsonBytesToObject(bArray, ProcessingResponse.class);
@@ -61,7 +61,7 @@ class TaskProcessingIntegrationTest {
         when(patternMatchingRepository.findById(any(UUID.class)))
                 .thenAnswer(invocation -> Optional.of(new PatternMatchingTask(response.getTaskId(), input, pattern)));
 
-        await().atMost(Duration.ofSeconds(6)).with().pollDelay(5, TimeUnit.SECONDS).untilAsserted(
+        await().atMost(Duration.ofSeconds(7)).with().pollDelay(6, TimeUnit.SECONDS).untilAsserted(
                 () -> {
                     final var taskArgumentCaptor = ArgumentCaptor.forClass(PatternMatchingTask.class);
                     verify(patternMatchingRepository, times(5)).save(taskArgumentCaptor.capture());

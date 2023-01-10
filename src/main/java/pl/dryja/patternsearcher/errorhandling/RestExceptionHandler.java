@@ -1,5 +1,6 @@
 package pl.dryja.patternsearcher.errorhandling;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class RestExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("Overall exception catch", e);
         return ResponseEntity.badRequest().body(
-                new ErrorResponse("Something terribly went not ok, our IT team will be inform about it")
+                new ErrorResponse("Something terribly went not ok, our IT team will be informed about it")
         );
     }
 
@@ -31,17 +32,24 @@ public class RestExceptionHandler {
     @ExceptionHandler({ RejectedExecutionException.class })
     public ResponseEntity<ErrorResponse> handleRejectExecutionException() {
         log.error("Execution reject to prevent problem increase thread pool config");
-        return ResponseEntity.badRequest().body(
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 new ErrorResponse("The execution pool is empty, please try one more time in few minutes if "
                         + "nothing change contact IT")
         );
     }
 
-    @ExceptionHandler({ MethodArgumentNotValidException.class })
+    @ExceptionHandler({ MethodArgumentNotValidException.class })//IllegalArgumentException
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException validException) {
         final var paramName = validException.getParameter().getParameterName();
         return ResponseEntity.badRequest().body(
                 new ErrorResponse("Empty parameter " + paramName)
+        );
+    }
+
+    @ExceptionHandler({ IllegalArgumentException.class, JsonParseException.class })
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException() {
+        return ResponseEntity.badRequest().body(
+                new ErrorResponse("Wrong param type or body is not json type")
         );
     }
 }
