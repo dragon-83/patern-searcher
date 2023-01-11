@@ -1,9 +1,9 @@
 package pl.dryja.patternsearcher.errorhandling;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,7 +24,7 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({ PatternMatchingTaskNotFoundException.class })
-    public ResponseEntity<ErrorResponse> handleNotFoundException(PatternMatchingTaskNotFoundException e) {
+    public ResponseEntity<ErrorResponse> handleNotFoundException(final PatternMatchingTaskNotFoundException e) {
         log.error("Request for task, that do not exists");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(e.getMessage()));
     }
@@ -39,17 +39,24 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({ MethodArgumentNotValidException.class })//IllegalArgumentException
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException validException) {
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            final MethodArgumentNotValidException validException) {
         final var paramName = validException.getParameter().getParameterName();
         return ResponseEntity.badRequest().body(
                 new ErrorResponse("Empty parameter " + paramName)
         );
     }
 
-    @ExceptionHandler({ IllegalArgumentException.class, JsonParseException.class })
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException() {
-        return ResponseEntity.badRequest().body(
-                new ErrorResponse("Wrong param type or body is not json type")
-        );
+    @ExceptionHandler({ IllegalArgumentException.class, HttpMessageNotReadableException.class})
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentsExceptions(final Exception e) {
+        if (e instanceof IllegalArgumentException illegalArgumentException) {
+            return ResponseEntity.badRequest().body(
+                    new ErrorResponse(illegalArgumentException.getMessage())
+            );
+        } else {
+            return ResponseEntity.badRequest().body(
+                    new ErrorResponse("Wrong param type or body is not json type")
+            );
+        }
     }
 }

@@ -32,11 +32,11 @@ public class TaskProcessingController {
             @ApiResponse(responseCode = "201"),
             @ApiResponse(responseCode = "403", description = "Out of threads in thread pool",
                     content = {
-                    @Content(
-                                mediaType = "application/json",
-                                schema = @Schema(implementation = ErrorResponse.class)
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
                             )}),
-            @ApiResponse(responseCode = "400", description = "Wrong param type or body is not json type",
+            @ApiResponse(responseCode = "400", description = "Problem with parameters or json body",
                     content = {
                             @Content(
                                     mediaType = "application/json",
